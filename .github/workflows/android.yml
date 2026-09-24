@@ -33,19 +33,19 @@ jobs:
             "platforms;android-36" \
             "build-tools;36.0.0"
 
-      - name: Check Gradle wrapper
-        shell: bash
-        run: |
-          test -f ./gradlew
-          test -f ./gradle/wrapper/gradle-wrapper.properties
-          echo "Gradle wrapper found:"
-          grep distributionUrl ./gradle/wrapper/gradle-wrapper.properties
+      - name: Install Gradle 9.3.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.3.1"
 
-      - name: Make Gradle wrapper executable
-        run: chmod +x ./gradlew
+      - name: Generate Gradle wrapper
+        run: |
+          gradle wrapper --gradle-version 9.3.1
+          chmod +x ./gradlew
+          ./gradlew --version
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
