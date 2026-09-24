@@ -76,7 +76,7 @@ fun OwnerLoginDialog(
 
                 // Title
                 Text(
-                    text = strings.ownerMode,
+                    text = "Owner Mode",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -85,7 +85,7 @@ fun OwnerLoginDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = strings.enterPasswordToContinue,
+                    text = "Enter password to continue",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -102,13 +102,13 @@ fun OwnerLoginDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("owner_password_input"),
-                    label = { Text(strings.adminPassword) },
+                    label = { Text("Admin Password") },
                     singleLine = true,
                     isError = error,
                     supportingText = {
                         if (error) {
                             Text(
-                                text = strings.wrongPassword,
+                                text = "Wrong password",
                                 color = MaterialTheme.colorScheme.error,
                                 fontSize = 12.sp
                             )
@@ -165,7 +165,7 @@ fun OwnerLoginDialog(
                             .testTag("owner_dialog_cancel_button"),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text(strings.cancel)
+                        Text("Cancel")
                     }
 
                     Button(
@@ -193,7 +193,7 @@ fun OwnerLoginDialog(
                             .testTag("owner_dialog_submit_button"),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text(strings.unlockAdmin, fontWeight = FontWeight.Bold)
+                        Text("Unlock Admin", fontWeight = FontWeight.Bold)
                     }
                 }
             }

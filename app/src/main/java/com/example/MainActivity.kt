@@ -157,9 +157,6 @@ fun ElectroFixApp(viewModel: ShopViewModel = viewModel()) {
                 showOwnerLoginDialog = false
                 viewModel.setAdminMode(true)
             },
-            onSavePassword = { newPassword ->
-                viewModel.saveAdminPassword(newPassword)
-            }
         )
     }
 
