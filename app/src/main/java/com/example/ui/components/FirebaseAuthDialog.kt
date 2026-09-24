@@ -1,6 +1,5 @@
 package com.example.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,9 +15,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Lock

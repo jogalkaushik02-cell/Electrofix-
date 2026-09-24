@@ -13,11 +13,11 @@ android {
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "com.example"
+    applicationId = "in.electrofix.shop"
     minSdk = 24
     targetSdk = 36
     versionCode = 1
-    versionName = "1.0"
+    versionName = "1.0.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -30,14 +30,25 @@ android {
       keyAlias = "upload"
       keyPassword = System.getenv("KEY_PASSWORD")
     }
+    create("debugConfig") {
+      storeFile = file("${rootDir}/debug.keystore")
+      storePassword = "android"
+      keyAlias = "androiddebugkey"
+      keyPassword = "android"
+    }
   }
 
   buildTypes {
     release {
       isCrunchPngs = false
-      isMinifyEnabled = false
+      isMinifyEnabled = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("release")
+      isDebuggable = false
+    }
+    debug {
+      signingConfig = signingConfigs.getByName("debugConfig")
+      isDebuggable = true
     }
   }
   compileOptions {
@@ -93,15 +104,15 @@ dependencies {
   implementation(libs.coil.compose)
   implementation(libs.converter.moshi)
   implementation(libs.firebase.ai)
-  // Firestore:
   implementation(libs.firebase.firestore)
   implementation(libs.firebase.analytics)
 
-  // Firebase Auth and Google Sign-In via Credential Manager:
   implementation(libs.firebase.auth)
   implementation(libs.androidx.credentials)
   implementation(libs.androidx.credentials.play.services)
   implementation(libs.googleid)
+  implementation(libs.sqlcipher)
+  implementation(libs.androidx.security.crypto)
   implementation(libs.firebase.appcheck.recaptcha)
   implementation(libs.firebase.appcheck.debug)
   implementation(libs.kotlinx.coroutines.android)

@@ -33,4 +33,3 @@ val SuccessGreen = Color(0xFF16A34A)
 val WarningYellow = Color(0xFFD97706)
 val InfoBlue = Color(0xFF2563EB)
 val ErrorRed = Color(0xFFDC2626)
-

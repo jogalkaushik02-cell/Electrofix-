@@ -4,9 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,7 +28,6 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
@@ -59,8 +56,6 @@ import com.example.ui.components.FirebaseAuthDialog
 import com.example.ui.components.OwnerLoginDialog
 import com.example.ui.components.ProductDetailDialog
 import com.example.ui.components.StoreTopBar
-import com.example.ui.locale.AppLanguage
-import com.example.ui.locale.AppStrings
 import com.example.ui.screens.AdminScreen
 import com.example.ui.screens.CartScreen
 import com.example.ui.screens.HomeScreen

@@ -3,7 +3,6 @@ package com.example.ui.screens
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,12 +25,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
@@ -40,26 +43,14 @@ import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Paid
-import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PersonAdd
-import com.example.data.firebase.FirebaseStatus
-import com.google.firebase.auth.FirebaseUser
-import com.example.data.model.AdminSettings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -93,11 +84,14 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.db.InitialData
+import com.example.data.firebase.FirebaseStatus
+import com.example.data.model.AdminSettings
 import com.example.data.model.Order
 import com.example.data.model.Product
 import com.example.data.model.RepairRequest
@@ -107,9 +101,7 @@ import com.example.ui.theme.BrandPrimary
 import com.example.ui.theme.BrandTertiary
 import com.example.ui.theme.SuccessGreen
 import com.example.ui.theme.WarningYellow
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.google.firebase.auth.FirebaseUser
 
 @Composable
 fun AdminScreen(
@@ -308,16 +300,11 @@ private fun AdminPinLockScreen(
     onUnlock: () -> Unit,
     onSavePassword: ((String) -> Unit)? = null
 ) {
-    val isPasswordConfigured = adminSettings?.isPasswordSet == true && !adminSettings.adminPassword.isNullOrBlank()
     val savedPassword = adminSettings?.adminPassword ?: ""
 
     var passwordInput by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf(false) }
-    var showSetPasswordInline by remember { mutableStateOf(false) }
-    var newPasswordInput by remember { mutableStateOf("") }
-    var confirmPasswordInput by remember { mutableStateOf("") }
-    var setPasswordError by remember { mutableStateOf<String?>(null) }
 
     Box(
         modifier = Modifier
@@ -343,7 +330,7 @@ private fun AdminPinLockScreen(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = if (isPasswordConfigured) Icons.Default.Lock else Icons.Default.Key,
+                            imageVector = Icons.Default.Lock,
                             contentDescription = null,
                             tint = BrandPrimary,
                             modifier = Modifier.size(32.dp)
@@ -366,208 +353,59 @@ private fun AdminPinLockScreen(
                         "Store Owner Access: Manage products, prices, stock, and orders.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp, bottom = 14.dp)
+                    modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
                 )
 
-                if (!isPasswordConfigured) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 14.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                OutlinedTextField(
+                    value = passwordInput,
+                    onValueChange = {
+                        passwordInput = it
+                        error = false
+                    },
+                    label = { Text(strings.enterPassword) },
+                    visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    trailingIcon = {
+                        IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
                             Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = strings.noPasswordSetNotice,
-                                fontSize = 12.sp,
-                                lineHeight = 16.sp,
-                                color = MaterialTheme.colorScheme.onSurface
+                                imageVector = if (isPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = if (isPasswordVisible) "Hide password" else "Show password"
                             )
                         }
-                    }
+                    },
+                    singleLine = true,
+                    isError = error,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("admin_pin_input")
+                )
 
-                    if (!showSetPasswordInline) {
-                        Button(
-                            onClick = onUnlock,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp)
-                                .testTag("admin_unlock_submit"),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(strings.setPasswordLaterBtn, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        OutlinedButton(
-                            onClick = { showSetPasswordInline = true },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(44.dp)
-                                .testTag("admin_set_password_now_btn"),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(Icons.Default.Key, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(strings.setPasswordNowBtn, fontSize = 13.sp)
-                        }
-                    } else {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                    RoundedCornerShape(12.dp)
-                                )
-                                .padding(12.dp)
-                        ) {
-                            Text(
-                                text = strings.changePasswordTitle,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            OutlinedTextField(
-                                value = newPasswordInput,
-                                onValueChange = {
-                                    newPasswordInput = it
-                                    setPasswordError = null
-                                },
-                                label = { Text(strings.newPasswordLabel) },
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth().testTag("admin_new_password_input")
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            OutlinedTextField(
-                                value = confirmPasswordInput,
-                                onValueChange = {
-                                    confirmPasswordInput = it
-                                    setPasswordError = null
-                                },
-                                label = { Text(strings.confirmPasswordLabel) },
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth().testTag("admin_confirm_password_input")
-                            )
-
-                            if (setPasswordError != null) {
-                                Text(
-                                    text = setPasswordError ?: "",
-                                    color = MaterialTheme.colorScheme.error,
-                                    fontSize = 11.sp,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            Button(
-                                onClick = {
-                                    if (newPasswordInput.isBlank()) {
-                                        setPasswordError = "Password cannot be empty"
-                                    } else if (newPasswordInput != confirmPasswordInput) {
-                                        setPasswordError = strings.passwordsDoNotMatch
-                                    } else {
-                                        onSavePassword?.invoke(newPasswordInput.trim())
-                                        onUnlock()
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth().height(44.dp),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text(strings.savePasswordToDb, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                            }
-                        }
-                    }
-                } else {
-                    OutlinedTextField(
-                        value = passwordInput,
-                        onValueChange = {
-                            passwordInput = it
-                            error = false
-                        },
-                        label = { Text(strings.enterPassword) },
-                        visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        trailingIcon = {
-                            IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                                Icon(
-                                    imageVector = if (isPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                    contentDescription = if (isPasswordVisible) "Hide password" else "Show password"
-                                )
-                            }
-                        },
-                        singleLine = true,
-                        isError = error,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("admin_pin_input")
+                if (error) {
+                    Text(
+                        text = strings.incorrectPassword,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 4.dp)
                     )
-
-                    if (error) {
-                        Text(
-                            text = strings.incorrectPassword,
-                            color = MaterialTheme.colorScheme.error,
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = {
-                            if (passwordInput == savedPassword || passwordInput == "1234") {
-                                onUnlock()
-                            } else {
-                                error = true
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(46.dp)
-                            .testTag("admin_unlock_submit"),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(strings.unlockAdmin, fontWeight = FontWeight.Bold)
-                    }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                Button(
+                    onClick = {
+                        if (passwordInput.isNotBlank() && passwordInput == savedPassword) {
+                            onUnlock()
+                        } else {
+                            error = true
+                        }
+                    },
                     modifier = Modifier
-                        .clickable { onUnlock() }
-                        .testTag("demo_quick_unlock_btn")
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .testTag("admin_unlock_submit"),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(
-                        text = "⚡ ${strings.quickDemoUnlock}",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
+                    Text(strings.unlockAdmin, fontWeight = FontWeight.Bold)
                 }
             }
         }

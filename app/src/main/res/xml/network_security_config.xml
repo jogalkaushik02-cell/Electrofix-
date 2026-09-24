@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Domain configuration for Firebase and Google APIs -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">googleapis.com</domain>
+        <domain includeSubdomains="true">google.com</domain>
+        <domain includeSubdomains="true">firebaseio.com</domain>
+        <domain includeSubdomains="true">firebaseapp.com</domain>
+        <domain includeSubdomains="true">firebasestorage.app</domain>
+        <domain includeSubdomains="true">cloudfunctions.net</domain>
+    </domain-config>
+
+    <!-- Allow cleartext only for localhost testing (development only) -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 class ShopViewModel(application: Application) : AndroidViewModel(application) {
 
     private val firebaseService = FirebaseService(application)
-    private val repository = ShopRepository(AppDatabase.getDatabase(application), firebaseService)
+    private val repository = ShopRepository(application, AppDatabase.getDatabase(application), firebaseService)
 
     val firebaseStatus: StateFlow<FirebaseStatus> = firebaseService.firebaseStatus
     val currentUser: StateFlow<FirebaseUser?> = firebaseService.currentUser
@@ -94,6 +94,9 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
     init {
         viewModelScope.launch {
             repository.seedInitialDataIfNeeded()
+            try {
+                repository.pullAllFromFirestore()
+            } catch (_: Exception) {}
         }
     }
 

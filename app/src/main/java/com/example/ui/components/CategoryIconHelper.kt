@@ -11,7 +11,6 @@ import androidx.compose.material.icons.outlined.Laptop
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Tv
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 
 object CategoryIconHelper {

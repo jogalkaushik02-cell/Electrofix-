@@ -1,7 +1,9 @@
 package com.example
 
 import com.example.data.model.AdminSettings
+import com.example.data.model.Order
 import com.example.data.model.Product
+import com.example.data.model.RepairRequest
 import com.example.ui.locale.AppLanguage
 import com.example.ui.locale.AppStrings
 import org.junit.Assert.assertEquals
@@ -25,7 +27,6 @@ class ShopAppUnitTest {
         assertEquals("મારા ઓર્ડર", gu.navOrders)
         assertEquals("ઉમેરો", gu.addBtn)
         assertEquals("દુકાન માલિક લોગિન", gu.ownerLogin)
-        assertEquals("હમણાં પ્રવેશ કરો (પાસવર્ડ પછીથી સેટ કરો)", gu.setPasswordLaterBtn)
     }
 
     @Test
@@ -40,9 +41,32 @@ class ShopAppUnitTest {
         assertTrue(configuredSettings.isPasswordSet)
         assertEquals("MySecureStorePass2026", configuredSettings.adminPassword)
 
-        // Matching
+        // Strict verification (no demo bypass)
         val enteredPass = "MySecureStorePass2026"
         assertTrue(enteredPass == configuredSettings.adminPassword)
+        assertFalse("1234" == configuredSettings.adminPassword)
+    }
+
+    @Test
+    fun testRealtimeOrderStatusTransition() {
+        val order = Order(
+            id = "#1001",
+            customerName = "Kaushik",
+            customerPhone = "+91 9876543210",
+            customerAddress = "Station Road, Rajkot",
+            paymentMethod = "COD",
+            itemsSummary = "Charger x1",
+            subtotal = 1299.0,
+            total = 1339.0,
+            status = Order.STATUS_PLACED
+        )
+        assertEquals(0, order.stageIndex)
+
+        val updatedOrder = order.copy(status = Order.STATUS_SHIPPED)
+        assertEquals(3, updatedOrder.stageIndex)
+
+        val deliveredOrder = updatedOrder.copy(status = Order.STATUS_DELIVERED)
+        assertEquals(4, deliveredOrder.stageIndex)
     }
 
     @Test
@@ -63,7 +87,7 @@ class ShopAppUnitTest {
         assertTrue(product.isAvailable)
         assertEquals(15, product.stock)
 
-        // Price update test without changing code
+        // Price & stock live update test
         val updated = product.copy(price = 1299.0, stock = 8)
         assertEquals(1299.0, updated.price, 0.001)
         assertEquals(8, updated.stock)

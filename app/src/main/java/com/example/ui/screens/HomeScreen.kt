@@ -29,12 +29,10 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,11 +49,9 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.Order
 import com.example.data.model.Product
 import com.example.data.model.RepairRequest
-import com.example.ui.components.CategoryIconHelper
 import com.example.ui.components.ProductCard
 import com.example.ui.locale.AppStrings
 import com.example.ui.theme.BrandPrimary
-import com.example.ui.theme.BrandSecondary
 import com.example.ui.theme.BrandTertiary
 
 @Composable
@@ -502,7 +498,7 @@ fun HomeScreen(
             }
         }
 
-        // Discreet Store Owner Gateway in Footer (for the store owner only, not in main nav)
+        // Discreet Store Owner Gateway in Footer
         item {
             Spacer(modifier = Modifier.height(28.dp))
             Column(

@@ -1,5 +1,6 @@
 package com.example.data.repository
 
+import android.content.Context
 import com.example.data.db.AppDatabase
 import com.example.data.db.InitialData
 import com.example.data.firebase.FirebaseService
@@ -9,15 +10,18 @@ import com.example.data.model.CartItem
 import com.example.data.model.Order
 import com.example.data.model.Product
 import com.example.data.model.RepairRequest
+import com.example.data.security.EncryptedPreferencesManager
 import com.google.firebase.auth.FirebaseUser
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.random.Random
 
 class ShopRepository(
+    private val context: Context,
     private val database: AppDatabase,
     private val firebaseService: FirebaseService? = null
 ) {
@@ -37,6 +41,41 @@ class ShopRepository(
     val firebaseStatus: StateFlow<FirebaseStatus>? = firebaseService?.firebaseStatus
     val currentUser: StateFlow<FirebaseUser?>? = firebaseService?.currentUser
 
+    init {
+        // 1. Live Admin Settings Real-time Stream
+        firebaseService?.onRemoteAdminSettingsChanged = { remoteSettings ->
+            CoroutineScope(Dispatchers.IO).launch {
+                if (remoteSettings.adminPassword.isNotBlank()) {
+                    EncryptedPreferencesManager.saveAdminPassword(context, remoteSettings.adminPassword)
+                } else if (!remoteSettings.isPasswordSet) {
+                    EncryptedPreferencesManager.deleteAdminPassword(context)
+                }
+                adminSettingsDao.insertOrUpdate(remoteSettings.copy(id = 1))
+            }
+        }
+
+        // 2. Live Products Real-time Stream (Amazon / Flipkart Instant Inventory & Price Push)
+        firebaseService?.onRemoteProductsChanged = { remoteProducts ->
+            CoroutineScope(Dispatchers.IO).launch {
+                productDao.insertAll(remoteProducts)
+            }
+        }
+
+        // 3. Live Orders Real-time Stream (Instant Live Status Dispatch)
+        firebaseService?.onRemoteOrdersChanged = { remoteOrders ->
+            CoroutineScope(Dispatchers.IO).launch {
+                orderDao.insertAll(remoteOrders)
+            }
+        }
+
+        // 4. Live Repairs Real-time Stream (Instant Live Repair Status Push)
+        firebaseService?.onRemoteRepairsChanged = { remoteRepairs ->
+            CoroutineScope(Dispatchers.IO).launch {
+                repairDao.insertAll(remoteRepairs)
+            }
+        }
+    }
+
     suspend fun seedInitialDataIfNeeded() = withContext(Dispatchers.IO) {
         val productCount = productDao.getCount()
         if (productCount == 0) {
@@ -52,17 +91,43 @@ class ShopRepository(
         }
         val currentSettings = adminSettingsDao.getSettings()
         if (currentSettings == null) {
+            val encPass = EncryptedPreferencesManager.getAdminPassword(context) ?: ""
             adminSettingsDao.insertOrUpdate(
                 AdminSettings(
                     id = 1,
-                    adminPassword = "",
-                    isPasswordSet = false,
+                    adminPassword = encPass,
+                    isPasswordSet = encPass.isNotBlank(),
                     storeName = "ElectroFix Electronics & Repairs",
                     storePhone = "+91 98765 43210",
                     storeAddress = "Main Bazar, Station Road, Rajkot, Gujarat",
                     storeUpiId = "electrofix@upi"
                 )
             )
+        }
+
+        // Initial cloud pull
+        try {
+            syncSettingsFromCloud()
+        } catch (_: Exception) {}
+    }
+
+    suspend fun syncSettingsFromCloud(): Result<AdminSettings?> = withContext(Dispatchers.IO) {
+        val fb = firebaseService ?: return@withContext Result.failure(IllegalStateException("Firebase offline"))
+        try {
+            val cloudSettings = fb.downloadAdminSettings().getOrNull()
+            if (cloudSettings != null && cloudSettings.isPasswordSet && cloudSettings.adminPassword.isNotBlank()) {
+                EncryptedPreferencesManager.saveAdminPassword(context, cloudSettings.adminPassword)
+                adminSettingsDao.insertOrUpdate(cloudSettings.copy(id = 1))
+                return@withContext Result.success(cloudSettings)
+            } else {
+                val local = adminSettingsDao.getSettings()
+                if (local != null && local.isPasswordSet && local.adminPassword.isNotBlank()) {
+                    fb.uploadAdminSettings(local)
+                }
+            }
+            Result.success(null)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
@@ -140,20 +205,23 @@ class ShopRepository(
         // 1. Save to Room SQLite database (offline reliable)
         orderDao.insertOrder(order)
 
-        // 2. Decrement stock in SQLite
+        // 2. Decrement stock in SQLite & push updated stock
         cartItems.forEach { item ->
             productDao.decrementStock(item.productId, item.quantity)
+            try {
+                productDao.getProductDirect(item.productId)?.let { updatedProd ->
+                    firebaseService?.updateProductPriceAndStock(updatedProd.id, updatedProd.price, updatedProd.stock)
+                }
+            } catch (_: Exception) {}
         }
 
         // 3. Clear cart
         cartDao.clearCart()
 
-        // 4. Sync to Cloud Firestore if available
+        // 4. Real-time push to Cloud Firestore immediately
         try {
             firebaseService?.uploadOrder(order)
-        } catch (_: Exception) {
-            // Local order placed safely
-        }
+        } catch (_: Exception) {}
 
         Result.success(orderId)
     }
@@ -187,12 +255,10 @@ class ShopRepository(
         // 1. Save to Room SQLite database
         repairDao.insertRepair(request)
 
-        // 2. Sync to Cloud Firestore if available
+        // 2. Real-time push to Cloud Firestore immediately
         try {
             firebaseService?.uploadRepair(request)
-        } catch (_: Exception) {
-            // Local repair ticket placed safely
-        }
+        } catch (_: Exception) {}
 
         Result.success(repairId)
     }
@@ -201,9 +267,7 @@ class ShopRepository(
     suspend fun updateProductPriceAndStock(productId: Long, price: Double, stock: Int) = withContext(Dispatchers.IO) {
         productDao.updatePriceAndStock(productId, price, stock)
         try {
-            productDao.getProductDirect(productId)?.let {
-                firebaseService?.uploadProducts(listOf(it))
-            }
+            firebaseService?.updateProductPriceAndStock(productId, price, stock)
         } catch (_: Exception) {}
     }
 
@@ -227,30 +291,56 @@ class ShopRepository(
 
     suspend fun updateOrderStatus(orderId: String, status: String) = withContext(Dispatchers.IO) {
         orderDao.updateOrderStatus(orderId, status)
+        try {
+            firebaseService?.updateOrderStatus(orderId, status)
+        } catch (_: Exception) {}
     }
 
     suspend fun updateRepairStatus(repairId: String, status: String) = withContext(Dispatchers.IO) {
         repairDao.updateRepairStatus(repairId, status)
+        try {
+            firebaseService?.updateRepairStatus(repairId, status)
+        } catch (_: Exception) {}
     }
 
-    // Admin Settings & Password Operations (Room SQLite Persistence)
+    // Admin Settings & Password Operations (Room SQLite Persistence + EncryptedSharedPreferences + Cloud Firestore)
     suspend fun getAdminSettings(): AdminSettings? = withContext(Dispatchers.IO) {
-        adminSettingsDao.getSettings()
+        val settings = adminSettingsDao.getSettings()
+        val encPass = EncryptedPreferencesManager.getAdminPassword(context)
+        if (encPass != null && settings != null && settings.adminPassword != encPass) {
+            settings.copy(adminPassword = encPass, isPasswordSet = encPass.isNotBlank())
+        } else {
+            settings
+        }
     }
 
     suspend fun saveAdminPassword(password: String): Unit = withContext(Dispatchers.IO) {
         val isSet = password.isNotBlank()
+        if (isSet) {
+            EncryptedPreferencesManager.saveAdminPassword(context, password)
+        } else {
+            EncryptedPreferencesManager.deleteAdminPassword(context)
+        }
+
         val current = adminSettingsDao.getSettings() ?: AdminSettings()
-        adminSettingsDao.insertOrUpdate(
-            current.copy(
-                adminPassword = password,
-                isPasswordSet = isSet
-            )
+        val updated = current.copy(
+            adminPassword = password,
+            isPasswordSet = isSet,
+            lastBackupTimestamp = System.currentTimeMillis()
         )
+        adminSettingsDao.insertOrUpdate(updated)
+
+        // Sync immediately to Firebase Cloud Firestore so all mobile devices receive it!
+        try {
+            firebaseService?.uploadAdminSettings(updated)
+        } catch (_: Exception) {}
     }
 
     suspend fun updateAdminSettings(settings: AdminSettings) = withContext(Dispatchers.IO) {
         adminSettingsDao.insertOrUpdate(settings)
+        try {
+            firebaseService?.uploadAdminSettings(settings)
+        } catch (_: Exception) {}
     }
 
     suspend fun resetDatabaseToInitial() = withContext(Dispatchers.IO) {
@@ -260,7 +350,7 @@ class ShopRepository(
     }
 
     // ==========================================
-    // Cloud Firestore Sync Operations
+    // Cloud Firestore Manual Sync Operations
     // ==========================================
 
     suspend fun syncAllToFirestore(): Result<String> = withContext(Dispatchers.IO) {
@@ -268,12 +358,14 @@ class ShopRepository(
         val products = productDao.getAllProductsList()
         val orders = orderDao.getAllOrdersList()
         val repairs = repairDao.getAllRepairsList()
+        val settings = adminSettingsDao.getSettings() ?: AdminSettings()
 
         val pCount = fb.uploadProducts(products).getOrNull() ?: 0
         val oCount = fb.uploadOrders(orders).getOrNull() ?: 0
         val rCount = fb.uploadRepairs(repairs).getOrNull() ?: 0
+        fb.uploadAdminSettings(settings)
 
-        Result.success("Cloud Sync Successful: $pCount products, $oCount orders, $rCount repairs synced to Firestore.")
+        Result.success("Cloud Sync Successful: $pCount products, $oCount orders, $rCount repairs, admin settings synced to Firestore.")
     }
 
     suspend fun pullAllFromFirestore(): Result<String> = withContext(Dispatchers.IO) {
@@ -291,7 +383,17 @@ class ShopRepository(
             repairDao.insertAll(remoteRepairs)
         }
 
-        Result.success("Cloud Pull Successful: ${remoteProducts.size} products, ${remoteOrders.size} orders, ${remoteRepairs.size} repairs restored.")
+        val remoteSettings = fb.downloadAdminSettings().getOrNull()
+        if (remoteSettings != null) {
+            if (remoteSettings.adminPassword.isNotBlank()) {
+                EncryptedPreferencesManager.saveAdminPassword(context, remoteSettings.adminPassword)
+            } else if (!remoteSettings.isPasswordSet) {
+                EncryptedPreferencesManager.deleteAdminPassword(context)
+            }
+            adminSettingsDao.insertOrUpdate(remoteSettings.copy(id = 1))
+        }
+
+        Result.success("Cloud Pull Successful: ${remoteProducts.size} products, ${remoteOrders.size} orders, ${remoteRepairs.size} repairs, admin settings restored.")
     }
 
     // ==========================================

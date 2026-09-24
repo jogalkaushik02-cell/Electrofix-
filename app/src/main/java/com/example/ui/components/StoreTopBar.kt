@@ -1,8 +1,6 @@
 package com.example.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,15 +13,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -43,7 +40,6 @@ import androidx.compose.ui.unit.sp
 import com.example.ui.locale.AppLanguage
 import com.example.ui.locale.AppStrings
 import com.example.ui.theme.BrandPrimary
-import com.example.ui.theme.SuccessGreen
 import com.google.firebase.auth.FirebaseUser
 
 @Composable
