@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.data.model.AdminSettings
-import com.example.ui.i18n.AppStrings
+import com.example.ui.locale.AppStrings
 
 @Composable
 fun OwnerLoginDialog(
