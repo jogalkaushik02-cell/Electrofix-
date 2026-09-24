@@ -23,14 +23,22 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: |
-            platform-tools
-            platforms;android-35
-            build-tools;35.0.0
           accept-android-sdk-license: true
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
       - name: Make Gradle executable
         run: chmod +x ./gradlew
+
+      - name: Clean Gradle build
+        run: ./gradlew clean
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace
@@ -40,3 +48,4 @@ jobs:
         with:
           name: Electrofix-debug-apk
           path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
