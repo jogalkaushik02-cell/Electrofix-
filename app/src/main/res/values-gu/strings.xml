@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ElectroFix</string>
+    <string name="shop_title">ઇલેક્ટ્રોફિક્સ શોપ</string>
+    <string name="repair_title">રીપેર સેવા</string>
+    <string name="admin_title">એડમિન પેનલ</string>
+</resources>

@@ -1,0 +1,7 @@
+{
+  "name": "ElectroFix",
+  "description": "Smart electronics shop and repair booking app with catalog, cart, live tracking, and admin dashboard",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">ElectroFix</string>
+    <string name="shop_title">ElectroFix Shop</string>
+    <string name="repair_title">Repair Service</string>
+    <string name="admin_title">Admin Panel</string>
+</resources>
+
